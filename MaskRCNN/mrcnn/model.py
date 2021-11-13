@@ -30,6 +30,9 @@ from distutils.version import LooseVersion
 assert LooseVersion(tf.__version__) >= LooseVersion("1.3")
 assert LooseVersion(keras.__version__) >= LooseVersion('2.0.8')
 
+from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())
+
 
 ############################################################
 #  Utility Functions
@@ -2274,7 +2277,7 @@ class MaskRCNN():
             "*epoch*", "{epoch:04d}")
 
     def train(self, train_dataset, val_dataset, learning_rate, epochs, layers,
-              augmentation=None, custom_callbacks=None, no_augmentation_sources=None):
+              augmentation=None, custom_callbacks=None, no_augmentation_sources=None, verbose=1):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
         learning_rate: The learning rate to train with
@@ -2348,8 +2351,9 @@ class MaskRCNN():
             callbacks += custom_callbacks
 
         # Train
-        log("\nStarting at epoch {}. LR={}\n".format(self.epoch, learning_rate))
-        log("Checkpoint Path: {}".format(self.checkpoint_path))
+        if verbose != 0:
+            log("\nStarting at epoch {}. LR={}\n".format(self.epoch, learning_rate))
+            log("Checkpoint Path: {}".format(self.checkpoint_path))
         self.set_trainable(layers)
         self.compile(learning_rate, self.config.LEARNING_MOMENTUM)
 
@@ -2360,7 +2364,7 @@ class MaskRCNN():
             workers = 0
         else:
             workers = multiprocessing.cpu_count()
-
+        # print('verbose is', verbose)
         self.keras_model.fit_generator(
             train_generator,
             initial_epoch=self.epoch,
@@ -2372,6 +2376,7 @@ class MaskRCNN():
             max_queue_size=100,
             workers=workers,
             use_multiprocessing=True,
+            verbose = verbose
         )
         self.epoch = max(self.epoch, epochs)
 
