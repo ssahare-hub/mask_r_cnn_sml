@@ -1,0 +1,17 @@
+
+README and scripts
+------------------
+
+The README and various scripts for inspection, preparation, and evaluation can be found in our git repository:
+https://github.com/mcordts/cityscapesScripts
+
+Contact
+-------
+
+Marius Cordts, Mohamed Omran
+www.cityscapes-dataset.net
+mail@cityscapes-dataset.net
+
+
+ADD THE gtFine and leftImg8bit dataset folders here found from cityscapes-dataset
+Download the coco weights from https://github.com/matterport/Mask_RCNN/releases

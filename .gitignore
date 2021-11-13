@@ -109,6 +109,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+mrcnn_env/
 
 # Spyder project settings
 .spyderproject
@@ -127,3 +128,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# dataset
+/data/gtFine
+/data/leftImg8bit
+
+*.h5
