@@ -135,3 +135,4 @@ dmypy.json
 /processed_data/gtFine
 
 *.h5
+*.png
