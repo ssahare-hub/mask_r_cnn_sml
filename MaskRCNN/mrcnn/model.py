@@ -1264,6 +1264,8 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
     # Note that some boxes might be all zeros if the corresponding mask got cropped out.
     # and here is to filter them out
     _idx = np.sum(mask, axis=(0, 1)) > 0
+    # print('='*100)
+    # print(f'indices are {_idx}')
     mask = mask[:, :, _idx]
     class_ids = class_ids[_idx]
     # Bounding boxes. Note that some boxes might be all zeros
@@ -1714,6 +1716,8 @@ def data_generator(dataset, config, shuffle=True, augment=False, augmentation=No
             # Skip images that have no instances. This can happen in cases
             # where we train on a subset of classes and the image doesn't
             # have any of the classes we care about.
+            # print(f'gt_class_ids are {gt_class_ids}')
+            # print('-'*100)
             if not np.any(gt_class_ids > 0):
                 continue
 
@@ -2277,7 +2281,7 @@ class MaskRCNN():
             "*epoch*", "{epoch:04d}")
 
     def train(self, train_dataset, val_dataset, learning_rate, epochs, layers,
-              augmentation=None, custom_callbacks=None, no_augmentation_sources=None, verbose=1):
+              augmentation=None, custom_callbacks=None, no_augmentation_sources=None, verbose=1, use_multiprocessing= True):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
         learning_rate: The learning rate to train with
@@ -2311,6 +2315,10 @@ class MaskRCNN():
             defined in the Dataset class.
         """
         assert self.mode == "training", "Create model in training mode."
+
+        # print('-'*100)
+        # print('model is training')
+        # print('-'*100)
 
         # Pre-defined layer regular expressions
         layer_regex = {
@@ -2354,7 +2362,7 @@ class MaskRCNN():
         if verbose != 0:
             log("\nStarting at epoch {}. LR={}\n".format(self.epoch, learning_rate))
             log("Checkpoint Path: {}".format(self.checkpoint_path))
-        self.set_trainable(layers)
+        self.set_trainable(layers, verbose = verbose)
         self.compile(learning_rate, self.config.LEARNING_MOMENTUM)
 
         # Work-around for Windows: Keras fails on Windows when using
@@ -2375,7 +2383,7 @@ class MaskRCNN():
             validation_steps=self.config.VALIDATION_STEPS,
             max_queue_size=100,
             workers=workers,
-            use_multiprocessing=True,
+            use_multiprocessing=use_multiprocessing,
             verbose = verbose
         )
         self.epoch = max(self.epoch, epochs)
