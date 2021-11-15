@@ -25,7 +25,7 @@ import os, glob, sys
 
 # cityscapes imports
 from cityscapesscripts.helpers.csHelpers import printError
-from cityscapesscripts.preparation.json2labelImg import json2labelImg
+from json2labelImg import json2labelImg
 
 # The main method
 def main():
@@ -35,18 +35,15 @@ def main():
     else:
         cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','..')
     # how to search for all ground truth
-    searchFine   = os.path.join( cityscapesPath , "gtFine"   , "*" , "*" , "*_gt*_polygons.json" )
-    searchCoarse = os.path.join( cityscapesPath , "gtCoarse" , "*" , "*" , "*_gt*_polygons.json" )
+    searchFine   = os.path.join( cityscapesPath , "gtFine"  , "*" , "*.json" )
 
     # search files
     filesFine = glob.glob( searchFine )
     filesFine.sort()
-    filesCoarse = glob.glob( searchCoarse )
-    filesCoarse.sort()
 
     # concatenate fine and coarse
-    files = filesFine + filesCoarse
-    # files = filesFine # use this line if fine is enough for now.
+    # use this line if fine is enough for now.
+    files = filesFine 
 
     # quit if we did not find anything
     if not files:
@@ -60,8 +57,16 @@ def main():
     print("Progress: {:>3} %".format( progress * 100 / len(files) ), end=' ')
     for f in files:
         # create the output filename
-        dst = f.replace( "_polygons.json" , "_labelTrainIds.png" )
+        fname = f.split('\\')[-1]
+        fname_noext = fname.split('.')[0]
+        dir_path = f.replace(".json",f"\\")
 
+        if not os.path.exists(dir_path):
+            # Create a new directory because it does not exist 
+            os.makedirs(dir_path)
+        
+        dst = f.replace(".json",f"\\{fname_noext}_label.png")
+        # print(dst)
         # do the conversion
         try:
             json2labelImg( f , dst , "trainIds" )
@@ -73,6 +78,8 @@ def main():
         progress += 1
         print("\rProgress: {:>3} %".format( progress * 100 / len(files) ), end=' ')
         sys.stdout.flush()
+        # break
+        
 
 
 # call the main

@@ -28,7 +28,7 @@ import os, glob, sys
 
 # cityscapes imports
 from cityscapesscripts.helpers.csHelpers import printError
-from cityscapesscripts.preparation.json2instanceImg import json2instanceImg
+from json2instanceImg import json2instanceImg
 
 
 # The main method
@@ -75,12 +75,12 @@ def main():
             # Create a new directory because it does not exist 
             os.makedirs(dir_path)
         
-        dst = f.replace(".json",f"\\{fname_noext}.png")
+        dst = f.replace(".json",f"\\{fname_noext}_instance.png")
         # print(dst)
         # do the conversion
         try:
             # print(f'converting {f} to {dst}')
-            json2instanceImg( f , dst , "trainIds" )
+            json2instanceImg( f , dst , "color" )
         except:
             print("Failed to convert: {}".format(f))
             raise

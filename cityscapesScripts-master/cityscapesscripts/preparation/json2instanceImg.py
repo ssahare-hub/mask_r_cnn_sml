@@ -42,7 +42,8 @@ from PIL import ImageDraw
 
 # cityscapes imports
 from cityscapesscripts.helpers.annotation import Annotation
-from cityscapesscripts.helpers.labels     import labels, name2label
+sys.path.insert(1, r'..\helpers')
+from labels import labels, name2label
 
 # Print the information
 def printHelp():
@@ -164,7 +165,8 @@ def json2instanceImg(inJson,outImg,encoding="ids"):
     annotation = Annotation()
     annotation.fromJsonFile(inJson)
     instanceImg = createInstanceImage( annotation , encoding )
-    instanceImg.save( outImg )
+    if instanceImg:
+        instanceImg.save( outImg )
 
 # The main method, if you execute this script directly
 # Reads the command line arguments and calls the method 'json2instanceImg'

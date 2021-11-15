@@ -132,7 +132,9 @@ dmypy.json
 # dataset
 /data/gtFine
 /data/leftImg8bit
+/processed_data/leftImg8bit
 /processed_data/gtFine
+/processed_data/test
 
 *.h5
 *.png

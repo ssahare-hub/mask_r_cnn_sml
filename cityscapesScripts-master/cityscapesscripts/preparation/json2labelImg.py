@@ -25,7 +25,8 @@ from PIL import ImageDraw
 
 # cityscapes imports
 from cityscapesscripts.helpers.annotation import Annotation
-from cityscapesscripts.helpers.labels     import name2label
+sys.path.insert(1, r'..\helpers')
+from labels import name2label
 
 # Print the information
 def printHelp():
@@ -70,7 +71,6 @@ def createLabelImage(annotation, encoding, outline=None):
 
     # a drawer to draw into the image
     drawer = ImageDraw.Draw( labelImg )
-
     # loop over all objects
     for obj in annotation.objects:
         label   = obj.label
@@ -103,6 +103,7 @@ def createLabelImage(annotation, encoding, outline=None):
             if outline:
                 drawer.polygon( polygon, fill=val, outline=outline )
             else:
+                # print(f'drawing {label}', end=' ')
                 drawer.polygon( polygon, fill=val )
         except:
             print("Failed to draw polygon with label {}".format(label))

@@ -18,8 +18,12 @@ import mrcnn.model as modellib
 from mrcnn import visualize
 from mrcnn.model import log
 
-from tqdm.notebook import tqdm
+# from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 from tqdm.keras import TqdmCallback
+
+import warnings
+# warnings.filterwarnings("ignore")
 
 # %%
 
@@ -56,20 +60,22 @@ class CityscapeConfig(Config):
 
     # We use a GPU with 12GB memory.
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 1  # 8
+    
+    # 8
+    IMAGES_PER_GPU = 1 
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 1000
+    STEPS_PER_EPOCH = 150
 
     # Number of validation steRPNps to run at the end of every training epoch.
-    VALIDATION_STEPS = 300
+    VALIDATION_STEPS = 50
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101
     BACKBONE = "resnet50"
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 6  # background + 1 shapes
+    NUM_CLASSES = 1 + 1  # background + 1 shapes
 
     # Input image resing
     IMAGE_RESIZE_MODE = "square"
@@ -114,12 +120,12 @@ class CityscapeDataset(utils.Dataset):
         path: directory to load the images.
         """
         # Add classes you want to train
-        self.add_class("cityscape", 1, "sidewalk")
-        self.add_class("cityscape", 2, "person")
-        self.add_class("cityscape", 3, "rider")
-        self.add_class("cityscape", 4, "car")
-        self.add_class("cityscape", 5, "truck")
-        self.add_class("cityscape", 6, "bus")
+        # self.add_class("cityscape", 1, "sidewalk")
+        # self.add_class("cityscape", 2, "person")
+        # self.add_class("cityscape", 3, "rider")
+        self.add_class("cityscape", 1, "car")
+        # self.add_class("cityscape", 5, "truck")
+        # self.add_class("cityscape", 6, "bus")
 
         # Add images
         image_dir = "{}/{}".format(DATA_DIR, self.subset)
@@ -156,9 +162,8 @@ class CityscapeDataset(utils.Dataset):
         """
         info = self.image_info[image_id]
         gt_id = info['gt_id']
-        print(gt_id)
+        # cityscapes = info["cityscape"]
         mask_dir = "{}\\{}\\{}".format(MASK_DIR, self.subset, gt_id)
-        print(mask_dir)
         masks_list = os.listdir(mask_dir)
         count = len(masks_list)
         mask = np.zeros([info['height'], info['width'], count])
@@ -167,8 +172,9 @@ class CityscapeDataset(utils.Dataset):
         for index, item in enumerate(masks_list):
             temp_mask_path = "{}\\{}".format(mask_dir, item)
             tmp_mask = 255 - skimage.io.imread(temp_mask_path)[:, :, np.newaxis]
+            # print(item, tmp_mask.shape)
             mask[:, :, index:index+1] = tmp_mask
-            class_ids.append(ord(item[0]))
+            class_ids.append(1)
 
         # Handle occlusions
         occlusion = np.logical_not(mask[:, :, -1]).astype(np.uint8)
@@ -176,25 +182,20 @@ class CityscapeDataset(utils.Dataset):
             mask[:, :, i] = mask[:, :, i] * occlusion
             occlusion = np.logical_and(occlusion, np.logical_not(mask[:, :, i]))
             
-        # print('-'*100)
-        # print(mask)    
-        # print(class_ids)
-        
-        return mask, np.array(class_ids)
+        # class_ids = np.array([self.class_names.index(c[0]) for c in cityscapes])
+            
+        return mask, np.array(class_ids, dtype=np.uint8)
 
-
-# %%
-# np.array(['a'], dtype=np.uint8)
 
 # %%
 if TRAINING:
     # Training dataset
-    dataset_train = CityscapeDataset("train", 100)
+    dataset_train = CityscapeDataset("train",100)
     dataset_train.load_shapes()
     dataset_train.prepare()
 
 # Validation dataset
-dataset_val = CityscapeDataset("val", 30)
+dataset_val = CityscapeDataset("val",100)
 dataset_val.load_shapes()
 dataset_val.prepare()
 
@@ -205,14 +206,6 @@ print("Class Count: {}".format(dataset_train.num_classes))
 for i, info in enumerate(dataset_train.class_info):
     print("{:3}. {:50}".format(i, info['name']))
 
-# Load and display random samples
-# image_ids = np.random.choice(dataset_train.image_ids, 3)
-# for image_id in image_ids:
-#     image = dataset_train.load_image(image_id)
-#     print('image_id', image_id)
-#     mask, class_ids = dataset_train.load_mask(image_id)
-#     visualize.display_top_masks(image, mask, class_ids,
-#                                 dataset_train.class_names)
 
 # %%
 # Create model in training mode
@@ -233,133 +226,53 @@ elif init_with == "coco":
                                 "mrcnn_bbox", "mrcnn_mask"])
 elif init_with == "last":
     # Load the last model you trained and continue training
-    model.load_weights(model.find_last()[1], by_name=True)
+    model.load_weights(model.find_last(), by_name=True)
 
 
 # %%
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    if TRAINING:
+        # tqdm bar for tracking training progress
+        callback = TqdmCallback()
+        callback.display()
+        
+        # Train the head branches
+        # Passing layers="heads" freezes all layers except the head
+        # layers. You can also pass a regular expression to select
+        # which layers to train by name pattern.
+        # model.train(dataset_train, dataset_val,
+        #             learning_rate=config.LEARNING_RATE,
+        #             epochs=1,
+        #             layers='heads')
 
-if TRAINING:
-    # tqdm bar for tracking training progress
-    # callback = TqdmCallback()
-    # callback.display()
-    
-    # Train the head branches
-    # Passing layers="heads" freezes all layers except the head
-    # layers. You can also pass a regular expression to select
-    # which layers to train by name pattern.
-    # model.train(dataset_train, dataset_val,
-    #             learning_rate=config.LEARNING_RATE,
-    #             epochs=1,
-    #             layers='heads')
+        # Fine tune all layers
+        # Passing layers="all" trains all layers. You can also
+        # pass a regular expression to select which layers to
+        # train by name pattern.
+        # learning_rate = 0.01
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=10,
+                    layers="all",
+                    custom_callbacks = [callback],
+                    verbose=0
+                    )
 
-    # Fine tune all layers
-    # Passing layers="all" trains all layers. You can also
-    # pass a regular expression to select which layers to
-    # train by name pattern.
-    # learning_rate = 0.01
-    model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=3,
-                layers="all",
-                # custom_callbacks = [callback],
-                verbose=1
-                )
+        # callback = TqdmCallback()
+        # callback.display()
+        # # learning_rate = 0.001
+        # model.train(dataset_train, dataset_val,
+        #             learning_rate=config.LEARNING_RATE / 10,
+        #             epochs=1,
+        #             layers="all",
+        #             custom_callbacks = [callback],
+        #             verbose=0
+        #             )
 
-    print('fine tuning all layers')
-
-    # callback = TqdmCallback()
-    # callback.display()
-    # learning_rate = 0.001
-    model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE / 10,
-                epochs=4,
-                layers="all",
-                # custom_callbacks = [callback],
-                verbose=1
-                )
-
-    # Save weights
-    # Typically not needed because callbacks save after every epoch
-    # Uncomment to save manually
-    # model_path = os.path.join(MODEL_DIR, "mask_rcnn_shapes.h5")
-    # model.keras_model.save_weights(model_path)
-
-# %%
-class InferenceConfig(CityscapeConfig):
-    GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
-    IMAGE_MIN_DIM = 1024
-    IMAGE_MAX_DIM = 1024
-
-inference_config = InferenceConfig()
-
-# %%
-# Recreate the model in inference mode
-model = modellib.MaskRCNN(mode="inference",
-                          config=inference_config,
-                          model_dir=MODEL_DIR)
-
-# Get path to saved weights
-# Either set a specific path or find last trained weights
-# model_path = os.path.join(ROOT_DIR, ".h5 file name here")
-model_path = model.find_last()[1]
-
-# Load trained weights (fill in path to trained weights here)
-assert model_path != "", "Provide path to trained weights"
-print("Loading weights from ", model_path)
-
-model.load_weights(model_path, by_name=True)
-
-# Test on random images
-image_ids = np.random.choice(dataset_val.image_ids, 2)
-for image_id in image_ids:
-    original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
-        modellib.load_image_gt(dataset_val, inference_config,
-                               image_id, use_mini_mask=False)
-
-	# log("original_image", original_image)
-	# log("image_meta", image_meta)
-	# log("gt_class_id", gt_class_id)
-	# log("gt_bbox", gt_bbox)
-	# log("gt_mask", gt_mask)
-
-    # visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,
-    #                         dataset_val.class_names, figsize=(8, 8))
-
-    results = model.detect([original_image], verbose=1)
-    r = results[0]
-    visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
-                                dataset_val.class_names, r['scores'], ax=get_ax())
-
-
-# Compute mAP
-#APs_05: IoU = 0.5
-#APs_all: IoU from 0.5-0.95 with increments of 0.05
-image_ids = np.random.choice(dataset_val.image_ids, 489)
-APs_05 = []
-APs_all = []
-
-for image_id in image_ids:
-    # Load images and ground truth data
-    image, image_meta, gt_class_id, gt_bbox, gt_mask = \
-        modellib.load_image_gt(dataset_val, inference_config,
-                               image_id, use_mini_mask=False)
-    molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
-    # Run object detection
-    results = model.detect([image], verbose=0)
-    r = results[0]
-    # Compute AP
-    AP_05, precisions, recalls, overlaps = \
-        utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-                         r["rois"], r["class_ids"], r["scores"], r['masks'])
-    APs_05.append(AP_05)
-
-    AP_all = \
-        utils.compute_ap_range(gt_bbox, gt_class_id, gt_mask,
-                         r["rois"], r["class_ids"], r["scores"], r['masks'])
-    APs_all.append(AP_all)
-
-print("mAP: ", np.mean(APs_05))
-print("mAP: ", np.mean(APs_all))
-
+        # Save weights
+        # Typically not needed because callbacks save after every epoch
+        # Uncomment to save manually
+        # model_path = os.path.join(MODEL_DIR, "mask_rcnn_shapes.h5")
+        # model.keras_model.save_weights(model_path)
 
