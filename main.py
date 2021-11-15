@@ -62,7 +62,7 @@ class CityscapeConfig(Config):
     GPU_COUNT = 1
     
     # 8
-    IMAGES_PER_GPU = 4
+    IMAGES_PER_GPU = 1
 
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 6000
