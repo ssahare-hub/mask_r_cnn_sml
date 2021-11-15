@@ -17,6 +17,7 @@ https://github.com/matterport/Mask_RCNN
 - to add an environment variable in powershell do this -> $Env:CITYSCAPES_DATASET='<path to processed_data/>'
 - then run cityscapesScripts-master\cityscapesscripts\preparation\createTrainIdLabelImgs.py 
 - you should have folders created inside processed_data/gtFine/*/ with one .png file per folder with weird black masks in white background
+- replace tensorflow-gpu with tensorflow==1.13.1 and keras to keras==2.0.8
 - install requirements.txt in the root dir
 - scratch your head and figure out all the import errors
 - pray to god and run main.py and hope your model starts training
