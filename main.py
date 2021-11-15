@@ -62,10 +62,10 @@ class CityscapeConfig(Config):
     GPU_COUNT = 1
     
     # 8
-    IMAGES_PER_GPU = 1 
+    IMAGES_PER_GPU = 4
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 150
+    STEPS_PER_EPOCH = 6000
 
     # Number of validation steRPNps to run at the end of every training epoch.
     VALIDATION_STEPS = 50
@@ -190,12 +190,12 @@ class CityscapeDataset(utils.Dataset):
 # %%
 if TRAINING:
     # Training dataset
-    dataset_train = CityscapeDataset("train",100)
+    dataset_train = CityscapeDataset("train")
     dataset_train.load_shapes()
     dataset_train.prepare()
 
 # Validation dataset
-dataset_val = CityscapeDataset("val",100)
+dataset_val = CityscapeDataset("val")
 dataset_val.load_shapes()
 dataset_val.prepare()
 
@@ -253,22 +253,22 @@ with warnings.catch_warnings():
         # learning_rate = 0.01
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=10,
+                    epochs=3,
                     layers="all",
                     custom_callbacks = [callback],
                     verbose=0
                     )
 
-        # callback = TqdmCallback()
-        # callback.display()
-        # # learning_rate = 0.001
-        # model.train(dataset_train, dataset_val,
-        #             learning_rate=config.LEARNING_RATE / 10,
-        #             epochs=1,
-        #             layers="all",
-        #             custom_callbacks = [callback],
-        #             verbose=0
-        #             )
+        callback = TqdmCallback()
+        callback.display()
+        # learning_rate = 0.001
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE / 10,
+                    epochs=1,
+                    layers="all",
+                    custom_callbacks = [callback],
+                    verbose=0
+                    )
 
         # Save weights
         # Typically not needed because callbacks save after every epoch
