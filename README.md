@@ -6,6 +6,8 @@ https://github.com/matterport/Mask_RCNN
 
 # PYTHON=3.6
 
+# if using anaconda on windows, after making sure powershell understands the command 'conda' run this -> conda init powershell
+
 # steps
 - Download cityscapes dataset, specifically gtFine_trainvaltest and leftImg8bit_trainvaltest
 - extract gtFine and leftImg8bit to data/
