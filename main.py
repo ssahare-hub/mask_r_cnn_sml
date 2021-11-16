@@ -65,10 +65,10 @@ class CityscapeConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 6000
+    STEPS_PER_EPOCH = 1000
 
     # Number of validation steRPNps to run at the end of every training epoch.
-    VALIDATION_STEPS = 50
+    VALIDATION_STEPS = 200
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101
@@ -83,7 +83,7 @@ class CityscapeConfig(Config):
     IMAGE_MAX_DIM = 1024
 
     # Learning rate and momentum
-    LEARNING_RATE = 0.01
+    LEARNING_RATE = 0.5
 config = CityscapeConfig()
 
 # %%
@@ -131,7 +131,8 @@ class CityscapeDataset(utils.Dataset):
         image_dir = "{}/{}".format(DATA_DIR, self.subset)
         image_ids = os.listdir(image_dir)
         if self.max_images != 0:
-            image_ids = image_ids[:self.max_images]
+            # image_ids = image_ids[:self.max_images]
+            image_ids = np.random.choice(image_ids, self.max_images)
         
         for index, item in tqdm(enumerate(image_ids), desc='preparing dataset'):
             temp_image_path = "{}/{}".format(image_dir, item)
@@ -190,12 +191,12 @@ class CityscapeDataset(utils.Dataset):
 # %%
 if TRAINING:
     # Training dataset
-    dataset_train = CityscapeDataset("train")
+    dataset_train = CityscapeDataset("train", 300)
     dataset_train.load_shapes()
     dataset_train.prepare()
 
 # Validation dataset
-dataset_val = CityscapeDataset("val")
+dataset_val = CityscapeDataset("val", 100)
 dataset_val.load_shapes()
 dataset_val.prepare()
 
@@ -213,7 +214,7 @@ model = modellib.MaskRCNN(mode="training", config=config,
                           model_dir=MODEL_DIR)
 
 # Which weights to start with?
-init_with = "coco"  # imagenet, coco, or last
+init_with = "last"  # imagenet, coco, or last
 
 if init_with == "imagenet":
     model.load_weights(model.get_imagenet_weights(), by_name=True)
@@ -253,21 +254,21 @@ with warnings.catch_warnings():
         # learning_rate = 0.01
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=3,
+                    epochs=10,
                     layers="all",
-                    custom_callbacks = [callback],
-                    verbose=0
+                    custom_callbacks = [],
+                    verbose=1
                     )
 
-        callback = TqdmCallback()
-        callback.display()
-        # learning_rate = 0.001
+        # callback = TqdmCallback()
+        # callback.display()
+        # # learning_rate = 0.001
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE / 10,
-                    epochs=1,
+                    epochs=5,
                     layers="all",
-                    custom_callbacks = [callback],
-                    verbose=0
+                    custom_callbacks = [],
+                    verbose=1
                     )
 
         # Save weights
