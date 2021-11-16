@@ -4,6 +4,7 @@ SML Project
 https://github.com/mcordts/cityscapesScripts
 https://github.com/matterport/Mask_RCNN
 
+# PYTHON=3.6
 
 # steps
 - Download cityscapes dataset, specifically gtFine_trainvaltest and leftImg8bit_trainvaltest
