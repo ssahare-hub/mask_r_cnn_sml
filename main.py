@@ -75,15 +75,17 @@ class CityscapeConfig(Config):
     BACKBONE = "resnet50"
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 1  # background + 1 shapes
+    NUM_CLASSES = 1 + 1  # background + 1 car
 
     # Input image resing
     IMAGE_RESIZE_MODE = "square"
-    IMAGE_MIN_DIM = 800
+    IMAGE_MIN_DIM = 512
     IMAGE_MAX_DIM = 1024
 
     # Learning rate and momentum
-    LEARNING_RATE = 0.5
+    LEARNING_RATE = 0.01
+    
+    DETECTION_MIN_CONFIDENCE=0.5
 config = CityscapeConfig()
 
 # %%
@@ -97,7 +99,7 @@ def get_ax(rows=1, cols=1, size=8):
     _, ax = plt.subplots(rows, cols, figsize=(size * cols, size * rows))
     return ax
 
-
+import json
 # %%
 class CityscapeDataset(utils.Dataset):
     '''
@@ -120,12 +122,11 @@ class CityscapeDataset(utils.Dataset):
         path: directory to load the images.
         """
         # Add classes you want to train
-        # self.add_class("cityscape", 1, "sidewalk")
-        # self.add_class("cityscape", 2, "person")
-        # self.add_class("cityscape", 3, "rider")
+        # self.add_class("cityscape", 1, "person")
+        # self.add_class("cityscape", 2, "rider")
         self.add_class("cityscape", 1, "car")
-        # self.add_class("cityscape", 5, "truck")
-        # self.add_class("cityscape", 6, "bus")
+        # self.add_class("cityscape", 4, "truck")
+        # self.add_class("cityscape", 5, "bus")
 
         # Add images
         image_dir = "{}/{}".format(DATA_DIR, self.subset)
@@ -137,9 +138,16 @@ class CityscapeDataset(utils.Dataset):
         for index, item in tqdm(enumerate(image_ids), desc='preparing dataset'):
             temp_image_path = "{}/{}".format(image_dir, item)
             temp_image_size = skimage.io.imread(temp_image_path).shape
-            self.add_image("cityscape", image_id=index, gt_id=os.path.splitext(item)[0],
-                            height=temp_image_size[0], width=temp_image_size[1],
-                            path=temp_image_path)
+            gt_id = os.path.splitext(item)[0]
+            mask_dir = "{}\\{}\\{}".format(MASK_DIR, self.subset, gt_id)
+            try:
+                # if path doesn't exist, it will throw error and not add the image
+                os.listdir(mask_dir)
+                self.add_image("cityscape", image_id=index, gt_id=gt_id,
+                                height=temp_image_size[0], width=temp_image_size[1],
+                                path=temp_image_path)
+            except Exception:
+                print(f'{mask_dir} doesn\'t exist, skipping {gt_id}')
 
 
     def load_image(self, image_id):
@@ -184,19 +192,24 @@ class CityscapeDataset(utils.Dataset):
             occlusion = np.logical_and(occlusion, np.logical_not(mask[:, :, i]))
             
         # class_ids = np.array([self.class_names.index(c[0]) for c in cityscapes])
-            
+        # np.savetxt('mask.out', mask.reshape(mask.shape[0], -1), delimiter=',', fmt='.2f')
+        # from PIL import Image
+        # for i in range(count):
+        #     im = Image.fromarray(mask[:, :, i])
+        #     im = im.convert('L')
+        #     im.save(f'{gt_id}_{i}.png')
         return mask, np.array(class_ids, dtype=np.uint8)
 
 
 # %%
 if TRAINING:
     # Training dataset
-    dataset_train = CityscapeDataset("train", 300)
+    dataset_train = CityscapeDataset("train")
     dataset_train.load_shapes()
     dataset_train.prepare()
 
 # Validation dataset
-dataset_val = CityscapeDataset("val", 100)
+dataset_val = CityscapeDataset("val")
 dataset_val.load_shapes()
 dataset_val.prepare()
 
@@ -242,22 +255,27 @@ with warnings.catch_warnings():
         # Passing layers="heads" freezes all layers except the head
         # layers. You can also pass a regular expression to select
         # which layers to train by name pattern.
-        # model.train(dataset_train, dataset_val,
-        #             learning_rate=config.LEARNING_RATE,
-        #             epochs=1,
-        #             layers='heads')
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=1,
+                    layers='heads',
+                    custom_callbacks = [callback],
+                    verbose=0
+                    )
 
+        callback = TqdmCallback()
+        callback.display()
         # Fine tune all layers
         # Passing layers="all" trains all layers. You can also
         # pass a regular expression to select which layers to
         # train by name pattern.
         # learning_rate = 0.01
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
-                    epochs=10,
-                    layers="all",
-                    custom_callbacks = [],
-                    verbose=1
+                    learning_rate=config.LEARNING_RATE/5,
+                    epochs=7,
+                    layers="3+",
+                    custom_callbacks = [callback],
+                    verbose=0
                     )
 
         # callback = TqdmCallback()
@@ -265,10 +283,10 @@ with warnings.catch_warnings():
         # # learning_rate = 0.001
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE / 10,
-                    epochs=5,
+                    epochs=10,
                     layers="all",
-                    custom_callbacks = [],
-                    verbose=1
+                    custom_callbacks = [callback],
+                    verbose=0
                     )
 
         # Save weights

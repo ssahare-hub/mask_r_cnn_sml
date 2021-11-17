@@ -87,7 +87,7 @@ labels = [
     Label(  'sky'                  , 23 ,       255, 'sky'             , 5       , False        , False        , ( 70,130,180) ),
     Label(  'person'               , 24 ,       255, 'human'           , 6       , True         , False        , (220, 20, 60) ),
     Label(  'rider'                , 25 ,       255, 'human'           , 6       , True         , False        , (255,  0,  0) ),
-    Label(  'car'                  , 26 ,        1 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+    Label(  'car'                  , 26 ,        0 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
     Label(  'truck'                , 27 ,       255, 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
     Label(  'bus'                  , 28 ,       255, 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
     Label(  'caravan'              , 29 ,       255, 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),

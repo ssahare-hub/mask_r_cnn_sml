@@ -62,7 +62,7 @@ def createLabelImage(annotation, encoding, outline=None):
     else:
         print("Unknown encoding '{}'".format(encoding))
         return None
-
+    # print('background', background)
     # this is the image that we want to create
     if encoding == "color":
         labelImg = Image.new("RGBA", size, background)
@@ -72,6 +72,8 @@ def createLabelImage(annotation, encoding, outline=None):
     # a drawer to draw into the image
     drawer = ImageDraw.Draw( labelImg )
     # loop over all objects
+    valid_label_count = 0
+    
     for obj in annotation.objects:
         label   = obj.label
         polygon = obj.polygon
@@ -99,6 +101,8 @@ def createLabelImage(annotation, encoding, outline=None):
         elif encoding == "color":
             val = name2label[label].color
 
+        if val not in [-1, 255]:
+            valid_label_count += 1
         try:
             if outline:
                 drawer.polygon( polygon, fill=val, outline=outline )
@@ -109,7 +113,7 @@ def createLabelImage(annotation, encoding, outline=None):
             print("Failed to draw polygon with label {}".format(label))
             raise
 
-    return labelImg
+    return labelImg, valid_label_count
 
 # A method that does all the work
 # inJson is the filename of the json file
@@ -118,11 +122,24 @@ def createLabelImage(annotation, encoding, outline=None):
 #     - "ids"      : classes are encoded using the regular label IDs
 #     - "trainIds" : classes are encoded using the training IDs
 #     - "color"    : classes are encoded using the corresponding colors
-def json2labelImg(inJson,outImg,encoding="ids"):
+def json2labelImg(json_file, encoding="ids"):
+    # create the output filename
+    fname = json_file.split('\\')[-1]
+    fname_noext = fname.split('.')[0]
+    dir_path = json_file.replace(".json",f"\\")
+
     annotation = Annotation()
-    annotation.fromJsonFile(inJson)
-    labelImg   = createLabelImage( annotation , encoding )
-    labelImg.save( outImg )
+    annotation.fromJsonFile(json_file)
+
+    labelImg, valid_label_count = createLabelImage( annotation , encoding )
+    if valid_label_count > 0:
+        if not os.path.exists(dir_path):
+            # Create a new directory because it does not exist 
+            os.makedirs(dir_path)
+        outImg = json_file.replace(".json",f"\\{fname_noext}_label.png")
+        labelImg.save( outImg )
+    else:
+        print(f'skipped {json_file} cuz no instances found')
 
 # The main method, if you execute this script directly
 # Reads the command line arguments and calls the method 'json2labelImg'
