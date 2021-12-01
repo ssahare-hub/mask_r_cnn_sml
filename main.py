@@ -68,14 +68,14 @@ class CityscapeConfig(Config):
     STEPS_PER_EPOCH = 1000
 
     # Number of validation steRPNps to run at the end of every training epoch.
-    VALIDATION_STEPS = 200
+    VALIDATION_STEPS = 300
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101
     BACKBONE = "resnet50"
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 1  # background + 1 car
+    NUM_CLASSES = 1 + 6  # background + 1 car
 
     # Input image resing
     IMAGE_RESIZE_MODE = "square"
@@ -83,7 +83,7 @@ class CityscapeConfig(Config):
     IMAGE_MAX_DIM = 1024
 
     # Learning rate and momentum
-    LEARNING_RATE = 0.01
+    LEARNING_RATE = 0.015
     
     DETECTION_MIN_CONFIDENCE=0.5
 config = CityscapeConfig()
@@ -112,6 +112,14 @@ class CityscapeDataset(utils.Dataset):
         super(CityscapeDataset, self).__init__(self)
         self.subset = subset
         self.max_images = max_images
+        self.classids = {
+            "sidewalk" : 1,
+            "car" : 2,
+            "truck" : 3,
+            "bus" : 4,
+            "motorcycle" : 5,
+            "bicycle" : 6,
+        }
 
     def load_shapes(self):
         """
@@ -122,11 +130,12 @@ class CityscapeDataset(utils.Dataset):
         path: directory to load the images.
         """
         # Add classes you want to train
-        # self.add_class("cityscape", 1, "person")
-        # self.add_class("cityscape", 2, "rider")
-        self.add_class("cityscape", 1, "car")
-        # self.add_class("cityscape", 4, "truck")
-        # self.add_class("cityscape", 5, "bus")
+        self.add_class("cityscape", 1, "sidewalk")
+        self.add_class("cityscape", 2, "car")
+        self.add_class("cityscape", 3, "truck")
+        self.add_class("cityscape", 4, "bus")
+        self.add_class("cityscape", 5, "motorcycle")
+        self.add_class("cityscape", 6, "bicycle")
 
         # Add images
         image_dir = "{}/{}".format(DATA_DIR, self.subset)
@@ -181,9 +190,13 @@ class CityscapeDataset(utils.Dataset):
         for index, item in enumerate(masks_list):
             temp_mask_path = "{}\\{}".format(mask_dir, item)
             tmp_mask = 255 - skimage.io.imread(temp_mask_path)[:, :, np.newaxis]
+            label_name = item.replace('.png','')
+            label_name = label_name.split('_')
+            label_name = label_name[len(label_name) - 1]
+            id_class = self.classids[label_name]
             # print(item, tmp_mask.shape)
             mask[:, :, index:index+1] = tmp_mask
-            class_ids.append(1)
+            class_ids.append(id_class)
 
         # Handle occlusions
         occlusion = np.logical_not(mask[:, :, -1]).astype(np.uint8)
@@ -227,7 +240,7 @@ model = modellib.MaskRCNN(mode="training", config=config,
                           model_dir=MODEL_DIR)
 
 # Which weights to start with?
-init_with = "last"  # imagenet, coco, or last
+init_with = "coco"  # imagenet, coco, or last
 
 if init_with == "imagenet":
     model.load_weights(model.get_imagenet_weights(), by_name=True)
@@ -248,20 +261,20 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     if TRAINING:
         # tqdm bar for tracking training progress
-        callback = TqdmCallback()
-        callback.display()
+        # callback = TqdmCallback()
+        # callback.display()
         
         # Train the head branches
         # Passing layers="heads" freezes all layers except the head
         # layers. You can also pass a regular expression to select
         # which layers to train by name pattern.
-        model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
-                    epochs=1,
-                    layers='heads',
-                    custom_callbacks = [callback],
-                    verbose=0
-                    )
+        # model.train(dataset_train, dataset_val,
+        #             learning_rate=config.LEARNING_RATE,
+        #             epochs=23,
+        #             layers='heads',
+        #             custom_callbacks = [callback],
+        #             verbose=0
+        #             )
 
         callback = TqdmCallback()
         callback.display()
@@ -271,19 +284,19 @@ with warnings.catch_warnings():
         # train by name pattern.
         # learning_rate = 0.01
         model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE/5,
-                    epochs=7,
-                    layers="3+",
+                    learning_rate=config.LEARNING_RATE / 5,
+                    epochs=27,
+                    layers="heads",
                     custom_callbacks = [callback],
                     verbose=0
                     )
 
-        # callback = TqdmCallback()
-        # callback.display()
+        callback = TqdmCallback()
+        callback.display()
         # # learning_rate = 0.001
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE / 10,
-                    epochs=10,
+                    epochs=30,
                     layers="all",
                     custom_callbacks = [callback],
                     verbose=0

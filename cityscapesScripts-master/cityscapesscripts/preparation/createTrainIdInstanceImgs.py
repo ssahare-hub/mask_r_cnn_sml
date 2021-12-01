@@ -64,23 +64,9 @@ def main():
     progress = 0
     print("Progress: {:>3} %".format( progress * 100 / len(files) ), end=' ')
     for f in files:
-        # create the output filename
-        # print('-'*100)
-        # print(f)
-        fname = f.split('\\')[-1]
-        fname_noext = fname.split('.')[0]
-        dir_path = f.replace(".json",f"\\")
-
-        if not os.path.exists(dir_path):
-            # Create a new directory because it does not exist 
-            os.makedirs(dir_path)
-        
-        dst = f.replace(".json",f"\\{fname_noext}_instance.png")
-        # print(dst)
         # do the conversion
         try:
-            # print(f'converting {f} to {dst}')
-            json2instanceImg( f , dst , "color" )
+            json2instanceImg( f , "trainIds" )
         except:
             print("Failed to convert: {}".format(f))
             raise

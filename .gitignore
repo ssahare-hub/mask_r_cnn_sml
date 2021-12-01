@@ -136,6 +136,7 @@ dmypy.json
 /processed_data/gtFine
 /processed_data/test
 
-*.h5
 *.png
 logs/
+
+*.h5

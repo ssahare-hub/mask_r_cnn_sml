@@ -36,7 +36,7 @@ def main():
         cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','..')
     # how to search for all ground truth
     searchFine   = os.path.join( cityscapesPath , "gtFine"  , "*" , "*.json" )
-
+    print(searchFine)
     # search files
     filesFine = glob.glob( searchFine )
     filesFine.sort()

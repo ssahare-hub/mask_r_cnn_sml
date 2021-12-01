@@ -161,11 +161,20 @@ def createInstanceImage(annotation, encoding):
 # encoding can be set to
 #     - "ids"      : classes are encoded using the regular label IDs
 #     - "trainIds" : classes are encoded using the training IDs
-def json2instanceImg(inJson,outImg,encoding="ids"):
+def json2instanceImg(json_file,encoding="ids"):
+    fname = json_file.split('\\')[-1]
+    fname_noext = fname.split('.')[0]
+    dir_path = json_file.replace(".json",f"\\")
+
     annotation = Annotation()
-    annotation.fromJsonFile(inJson)
+    annotation.fromJsonFile(json_file)
+
     instanceImg = createInstanceImage( annotation , encoding )
     if instanceImg:
+        if not os.path.exists(dir_path):
+            # Create a new directory because it does not exist 
+            os.makedirs(dir_path)
+        outImg = json_file.replace(".json",f"\\{fname_noext}_instance.png")
         instanceImg.save( outImg )
 
 # The main method, if you execute this script directly
