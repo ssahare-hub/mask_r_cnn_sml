@@ -1,7 +1,7 @@
 # %%
 import os
 import sys
-sys.path.append("MaskRCNN")
+sys.path.append("./MaskRCNN")
 import random
 import math
 import re
@@ -240,7 +240,7 @@ model = modellib.MaskRCNN(mode="training", config=config,
                           model_dir=MODEL_DIR)
 
 # Which weights to start with?
-init_with = "coco"  # imagenet, coco, or last
+init_with = "last"  # imagenet, coco, or last
 
 if init_with == "imagenet":
     model.load_weights(model.get_imagenet_weights(), by_name=True)
